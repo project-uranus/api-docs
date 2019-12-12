@@ -5,3 +5,216 @@ FORMAT: 1A
 The API Documentation of Project [Uranus](https://github.com/project-uranus).
 
 https://uranus.docs.apiary.io/
+
+## Authentication
+
+JSON Web Token
+
+https://tools.ietf.org/html/rfc7519
+
+- Header
+  - alg: SH256
+  - typ: JWT
+- Payload
+  - exp: `timestamp`
+  - iss: uranus
+  - iat: `timestamp`
+  - role: `administrator` | `staff` | `passenger`
+
+## Models
+
+### User
+
+| Name | Type | Example | Note |
+| :--- | :--: | :------ | :--- |
+| email | `String` | | |
+| password | `String` | | md5 |
+| name | `String` | John Doe | |
+| first_name | `String` | JOHN | |
+| last_name | `String` | DOE | |
+| identification_number | `String` | | |
+
+### Airport
+
+| Name | Type | Example |
+| :--- | :--: | :------ |
+| name | `String` | 上海浦东国际机场 |
+| IATA | `String` | PVG |
+| position | `String` | 上海 |
+| position_code | `String` | SHA |
+| latitude | `Double` | 31.143333 |
+| longitude | `Double` | 121.805278 |
+
+### Boarding Pass
+
+https://shaun.net/notes/whats-contained-in-a-boarding-pass-barcode/
+
+| Name | Type | Size | Default | Example | Note |
+| :--- | :--: | :--: | :------ | :------ | :--- |
+| format_code | `Char` | 1 |  M | | |
+| number\_of\_legs\_encoded | `Char` | 1 | 1 | | |
+| passenger_name | `String` | 20 | | DESMARAIS/LUC | |
+| electronic\_ticket\_indicator | `Char` | 1 | E | | |
+| operating\_carrier\_PNR\_code | `String` | 7 | | ABC123 | |
+| from\_city\_airport\_code | `String` | 3 | | YUL | |
+| to\_city\_airport\_code | `String` | 3 | | FRA | |
+| operating\_carrier\_designator | `String` | 3 | | AC | |
+| flight_number | `String` | 5 | | 0834 | |
+| date\_of\_flight | `Int` | 3 | | 226 | Julian Date |
+| compartment_code | `Char` | 1 | | F | |
+| seat_number | `String` | 4 | | 001A | |
+| check\_in\_sequence\_number | `String` | 5 | | 0025 | |
+| passenger_status | `Char` | 1 | | 1 | |
+| field\_size\_of\_variable\_size\_field | `String` | 2 | 00 | 00 | Hexiadecimal |
+
+#### Passenger Status
+
+https://github.com/georgesmith46/bcbp
+
+- `0` - Ticket issuance/passenger not checked in
+- `1` - Ticket issuance/passenger checked in
+- `2` - Bag checked/passenger not checked in
+- `3` - Bag checked/passenger checked in
+- `4` - Passenger passed security check
+- `5` - Passenger passed security gate exit (coupon used)
+- `6` - Transit
+- `7` - Standby
+- `8` - Boarding data revalidation done
+- `9` - Original boarding line used at time of ticket issuance
+- `A` - Up- or down-grading required at close out
+
+## Counter
+
+| Name | Type | Example |
+| :--- | :--: | :------ |
+| type | | |
+| staff_id | `Int` | |
+| is_available | `Bool` | |
+
+## Flight
+
+| Name | Type | Example |
+| :--- | :--: | :------ |
+| airline | `String` | 中国东方航空 |
+| flight_number | `String` | MU291 |
+| aircraft | `String` | Airbus A320 |
+| departure_date | `Date` | 2019-12-19 |
+| departure_time | `Time` | 17:15 |
+| arrival_time | `Time` | 20:40 |
+| origin_airport | `Airport` | |
+| destination_airport | `Airport` | |
+| boarding_time | `Time` | 16:30 |
+| boarding_gate | `String` | 2 |
+| status | `Char` | 0 |
+
+# Group Auth
+
+## Sign Up [/auth/sign_up]
+
+### Sign Up [POST]
+
++ Request (application/json)
+
+    + Headers
+            
+            Accept: application/json
+
+    + Body
+
+            {
+                "phone": "00000000000"
+            }
+        
++ Response 201 (application/json)
+
+    + Body
+    
+            { 
+                "token": "QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
+            }
+
+### Login [/auth/login]
+
+# Group Passenger
+
+## Boarding Pass [/boardingPass]
+
+### Get Boarding Pass Code [GET]
+
++ Request
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+
++ Response 200 (application/json)
+
+    + Body
+    
+            { 
+                "token": "M1DESMARAIS/LUC       EABC123 YULFRAAC 0834 226F001A0025 100"
+            }
+
+### Update Passenger Status [PUT]
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    
+    + Body
+
+            {
+                "passenger_status": 'A'
+            }
+
++ Response 200 (application/json)
+
+    + Body
+    
+            { 
+                "token": "M1DESMARAIS/LUC       EABC123 YULFRAAC 0834 226F001A0025 100"
+            }
+
+# Group Administrator
+
+## Flight [/flight]
+
+### Create Flight [POST]
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    
+    + Body
+
+            {
+                "passenger_status": 'A'
+            }
+
++ Response 200 (application/json)
+
++ Response 403 (application/json)
+
+### Update Flight [PUT]
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    
+    + Body
+
+            {
+                "passenger_status": 'A'
+            }
+
++ Response 200 (application/json)
+
++ Response 403 (application/json)
+
+# Group Staff
