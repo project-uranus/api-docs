@@ -6,6 +6,8 @@ The API Documentation of Project [Uranus](https://github.com/project-uranus).
 
 https://uranus.docs.apiary.io/
 
+https://github.com/microsoft/api-guidelines
+
 ## Authentication
 
 JSON Web Token
@@ -32,7 +34,7 @@ https://tools.ietf.org/html/rfc7519
 | name | `String` | John Doe | |
 | first_name | `String` | JOHN | |
 | last_name | `String` | DOE | |
-| identification_number | `String` | | |
+| id_number | `String` | | |
 
 ### Airport
 
@@ -83,7 +85,7 @@ https://github.com/georgesmith46/bcbp
 - `9` - Original boarding line used at time of ticket issuance
 - `A` - Up- or down-grading required at close out
 
-## Counter
+### Counter
 
 | Name | Type | Example |
 | :--- | :--: | :------ |
@@ -91,23 +93,23 @@ https://github.com/georgesmith46/bcbp
 | staff_id | `Int` | |
 | is_available | `Bool` | |
 
-## Flight
+### Flight
 
 | Name | Type | Example |
 | :--- | :--: | :------ |
 | airline | `String` | 中国东方航空 |
 | flight_number | `String` | MU291 |
 | aircraft | `String` | Airbus A320 |
-| departure_date | `Date` | 2019-12-19 |
-| departure_time | `Time` | 17:15 |
-| arrival_time | `Time` | 20:40 |
+| date\_of\_flight | `Date` | 2019-12-19 |
+| departure_time | `Timestamp` | 2019-12-19T17:15:00Z |
+| arrival_time | `Timestamp` | 2019-12-19T20:40:00Z |
 | origin_airport | `Airport` | |
 | destination_airport | `Airport` | |
-| boarding_time | `Time` | 16:30 |
+| boarding_time | `Time` | 2019-12-19T16:30:00Z |
 | boarding_gate | `String` | 2 |
 | status | `Char` | 0 |
 
-# Group Auth
+# Group Authentication
 
 ## Sign Up [/auth/sign_up]
 
@@ -127,19 +129,39 @@ https://github.com/georgesmith46/bcbp
         
 + Response 201 (application/json)
 
+    + Attributes (object)
+        + token: `QWxhZGRpbjpvcGVuIHNlc2FtZQ==` (string) - Token    
+
     + Body
     
             { 
                 "token": "QWxhZGRpbjpvcGVuIHNlc2FtZQ=="
             }
 
++ Response 409 (application/json)
+
+    + Attributes (Error)
+
+    + Body
+    
+            { 
+                "error": [
+                    "code": "Conflict",
+                    "message": "duplicated e-mail"
+                ]
+            }
+
 ### Login [/auth/login]
 
-# Group Passenger
+`administrator` | `staff` | `passenger`
+
+# Group Flight
 
 ## Boarding Pass [/boardingPass]
 
-### Get Boarding Pass Code [GET]
+### Get Boarding Pass Token [GET]
+
+`passenger`
 
 + Request
 
@@ -149,14 +171,32 @@ https://github.com/georgesmith46/bcbp
 
 + Response 200 (application/json)
 
+    + Attributes (object)
+        + token: `M1DESMARAIS/LUC       EABC123 YULFRAAC 0834 226F001A0025 100` (string) - Token
+
     + Body
     
             { 
                 "token": "M1DESMARAIS/LUC       EABC123 YULFRAAC 0834 226F001A0025 100"
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (Error)
+
+    + Body
+    
+            { 
+                "error": [
+                    "code": "Unauthorized",
+                    "message": "invalid token"
+                ]
             }
 
 ### Update Passenger Status [PUT]
 
+`staff`
+
 + Request (application/json)
 
     + Headers
@@ -177,11 +217,176 @@ https://github.com/georgesmith46/bcbp
                 "token": "M1DESMARAIS/LUC       EABC123 YULFRAAC 0834 226F001A0025 100"
             }
 
-# Group Administrator
++ Response 401 (application/json)
+
+    + Attributes (Error)
+
+    + Body
+    
+            { 
+                "error": [
+                    "code": "Unauthorized",
+                    "message": "invalid token"
+                ]
+            }
+
+## Personal Information [/information]
+
+### Update Personal Information [PUT]
+
+`passenger`
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    
++ Response 200 (application/json)
+
+    + Body
+    
+            { 
+                "value": {}
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (Error)
+
+    + Body
+    
+            { 
+                "error": [
+                    "code": "Unauthorized",
+                    "message": "invalid token"
+                ]
+            }
+
+## Airports [/airports]
+
+### Get IATA List [GET]
+
+`administrator`
+
+Get the list of available IATA airpode codes.
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + value (array[string])
+
+    + Body
+    
+            { 
+                "value": [
+                    "PVG",
+                    "NGO"
+                ]
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (Error)
+
+    + Body
+    
+            { 
+                "error": [
+                    "code": "Unauthorized",
+                    "message": "invalid token"
+                ]
+            }
 
 ## Flight [/flight]
 
+### Get Flight list [GET /flights]
+
+`passenger`
+
+Get the list of flights of a specific passenger.
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + value (array[Flight])
+
+    + Body
+    
+            { 
+                "value": []
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (Error)
+
+    + Body
+    
+            { 
+                "error": [
+                    "code": "Unauthorized",
+                    "message": "invalid token"
+                ]
+            }
+
+### Get Flight Detail [GET /flight/{?flight_id}]
+
+`passenger`
+
+Get the detail of a specific flight according to the ID of flight.
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+
++ Parameters
+
+    + flight_id: `ABC123` (optional, string) - Flight ID
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + value (Flight)
+
+    + Body
+    
+            { 
+                "value": {
+                }
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (Error)
+
+    + Body
+    
+            { 
+                "error": [
+                    "code": "Unauthorized",
+                    "message": "invalid token"
+                ]
+            }
+
+            
 ### Create Flight [POST]
+
+`administrator`
 
 + Request (application/json)
 
@@ -192,15 +397,37 @@ https://github.com/georgesmith46/bcbp
     + Body
 
             {
-                "passenger_status": 'A'
+                "airline": "中国东方航空",
+                "flight_number": "MU291",
+                "aircraft": "Airbus A320",
+                "date_of_flight": "2019-12-19",
+                "departure_time": "2019-12-19T17:15:00Z".
+                "arrival_time": "2019-12-19T20:40:00Z"
+                "origin_airport": "SHA",
+                "destination_airport": "NGO",
+                "boarding_time": "2019-12-19T16:30:00Z".
+                "boarding_gate": "2"
             }
 
 + Response 200 (application/json)
 
-+ Response 403 (application/json)
++ Response 401 (application/json)
+
+    + Attributes (Error)
+
+    + Body
+    
+            { 
+                "error": [
+                    "code": "Unauthorized",
+                    "message": "invalid token"
+                ]
+            }
 
 ### Update Flight [PUT]
 
+`administrator`
+
 + Request (application/json)
 
     + Headers
@@ -215,6 +442,50 @@ https://github.com/georgesmith46/bcbp
 
 + Response 200 (application/json)
 
-+ Response 403 (application/json)
++ Response 401 (application/json)
 
-# Group Staff
+    + Attributes (Error)
+
+    + Body
+    
+            { 
+                "error": [
+                    "code": "Unauthorized",
+                    "message": "invalid token"
+                ]
+            }
+
+# Data Structures
+
+## Error (object)
+
++ error (object)
+    + code: `Bad Request` (string) - HTTP status codes
+    + message: `Message` (string) - Custom message
+
+## Airport (object)
+
++ name: `上海浦东国际机场` (string) - Name
++ IATA: `PVG` (string) - IATA airport code
++ position: `上海` (string) - Position
++ position_code: `SHA` (string) - Position code
++ latitude: `31.143333` (string) - Latitude
++ longitude: `121.805278` (string) - Longtitude
+
+## Flight (object)
+
++ airline: `中国东方航空` (string) - Airline
++ flight_number: `MU291` (string) - Flight number
++ aircraft: `Airbus A320` (string) - Aircraft
++ date_of_flight: `2019-12-19` (string) - Date of flight
++ departure_time: `2019-12-19T17:15:00Z` (string) - Time of Departure
++ arrival_time: `2019-12-19T20:40:00Z` (string) - Time of Arrival
++ origin_airport (Airport)
++ destination_airport (Airport)
++ boarding_time: `2019-12-19T16:30:00Z` (string) - Time of Boarding
++ boarding_gate: `2` (string)
++ status (enum[number])
+
+    + Members
+    
+        + `0`
