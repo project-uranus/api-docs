@@ -4,9 +4,11 @@ FORMAT: 1A
 
 The API Documentation of Project [Uranus](https://github.com/project-uranus).
 
-https://uranus.docs.apiary.io/
+## References
 
-https://github.com/microsoft/api-guidelines
+- https://uranus.docs.apiary.io/
+- https://github.com/microsoft/api-guidelines
+- https://github.com/georgesmith46/bcbp
 
 ## Authentication
 
@@ -21,7 +23,8 @@ https://tools.ietf.org/html/rfc7519
   - exp: `timestamp`
   - iss: uranus
   - iat: `timestamp`
-  - role: `administrator` | `staff` | `passenger`
+  - role: `administrator` | `staff` | `security`| `passenger`
+  - identifier: `Long`
 
 ## Models
 
@@ -53,37 +56,24 @@ https://shaun.net/notes/whats-contained-in-a-boarding-pass-barcode/
 
 | Name | Type | Size | Default | Example | Note |
 | :--- | :--: | :--: | :------ | :------ | :--- |
-| format_code | `Char` | 1 |  M | | |
-| number\_of\_legs\_encoded | `Char` | 1 | 1 | | |
-| passenger_name | `String` | 20 | | DESMARAIS/LUC | |
-| electronic\_ticket\_indicator | `Char` | 1 | E | | |
-| operating\_carrier\_PNR\_code | `String` | 7 | | ABC123 | |
-| from\_city\_airport\_code | `String` | 3 | | YUL | |
-| to\_city\_airport\_code | `String` | 3 | | FRA | |
-| operating\_carrier\_designator | `String` | 3 | | AC | |
-| flight_number | `String` | 5 | | 0834 | |
-| date\_of\_flight | `Int` | 3 | | 226 | Julian Date |
-| compartment_code | `Char` | 1 | | F | |
-| seat_number | `String` | 4 | | 001A | |
-| check\_in\_sequence\_number | `String` | 5 | | 0025 | |
-| passenger_status | `Char` | 1 | | 1 | |
-| field\_size\_of\_variable\_size\_field | `String` | 2 | 00 | 00 | Hexiadecimal |
+| format_code | `Char` | 1 |  M | | `DEFAULT` |
+| number\_of\_legs\_encoded | `Char` | 1 | 1 | | `DEFAULT` |
+| passenger_name | `String` | 20 | | DESMARAIS/LUC | `CSV` |
+| electronic\_ticket\_indicator | `Char` | 1 | E | | `DEFAULT` |
+| operating\_carrier\_PNR\_code | `String` | 7 | | ABC123 |  `DEFAULT` |
+| from\_city\_airport\_code | `String` | 3 | | YUL | `IMPORTED` |
+| to\_city\_airport\_code | `String` | 3 | | FRA | `IMPORTED` |
+| operating\_carrier\_designator | `String` | 3 | | AC | `IMPORTED` |
+| flight_number | `String` | 5 | | 0834 | `IMPORTED` |
+| date\_of\_flight | `Int` | 3 | | 226 | `IMPORTED` Julian Date |
+| compartment_code | `Char` | 1 | | F | `CSV` |
+| seat_number | `String` | 4 | | 001A | `CSV` |
+| check\_in\_sequence\_number | `String` | 5 | 0000 | 0025 | `DEFAULT` |
+| passenger_status | `Char` | 1 | 0 | 0 | |
+| field\_size\_of\_variable\_size\_field | `String` | 2 | 00 | 00 | `DEFAULT` Hexiadecimal |
 
 #### Passenger Status
 
-https://github.com/georgesmith46/bcbp
-
-- `0` - Ticket issuance/passenger not checked in
-- `1` - Ticket issuance/passenger checked in
-- `2` - Bag checked/passenger not checked in
-- `3` - Bag checked/passenger checked in
-- `4` - Passenger passed security check
-- `5` - Passenger passed security gate exit (coupon used)
-- `6` - Transit
-- `7` - Standby
-- `8` - Boarding data revalidation done
-- `9` - Original boarding line used at time of ticket issuance
-- `A` - Up- or down-grading required at close out
 
 ### Counter
 
@@ -130,6 +120,7 @@ https://github.com/georgesmith46/bcbp
 + Response 201 (application/json)
 
     + Attributes (object)
+
         + token: `QWxhZGRpbjpvcGVuIHNlc2FtZQ==` (string) - Token    
 
     + Body
@@ -145,10 +136,10 @@ https://github.com/georgesmith46/bcbp
     + Body
     
             { 
-                "error": [
+                "error": {
                     "code": "Conflict",
                     "message": "duplicated e-mail"
-                ]
+                }
             }
 
 ### Login [/auth/login]
@@ -156,6 +147,58 @@ https://github.com/georgesmith46/bcbp
 `administrator` | `staff` | `passenger`
 
 # Group Flight
+
+## Check-in [/checkin]
+
+### Check-in [GET]
+
+`passenger`
+
++ Request
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    
+    + Attributes (object)
+
+        + number\_of\_luggages: `1` (number) - The number of luggages to be checked.
+        + accompanying_persons (array[string]) - The ID numbers of accompanying persons, **except oneself**.
+
+    + Body
+
+            {
+                "number_of_luggages": 1,
+                "accompanying_persons": [
+                    "11111111",
+                    "22222222"
+                ]
+            }
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+
+        + counter_id: `1` (number) - The number of counter the passenger assigned to.
+
+    + Body
+
+            {
+                "counter_id": 1
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (Error)
+
+    + Body
+    
+            { 
+                "error": {
+                    "code": "Unauthorized",
+                    "message": "invalid token"
+                }
+            }
 
 ## Boarding Pass [/boardingPass]
 
@@ -172,6 +215,7 @@ https://github.com/georgesmith46/bcbp
 + Response 200 (application/json)
 
     + Attributes (object)
+
         + token: `M1DESMARAIS/LUC       EABC123 YULFRAAC 0834 226F001A0025 100` (string) - Token
 
     + Body
@@ -187,10 +231,10 @@ https://github.com/georgesmith46/bcbp
     + Body
     
             { 
-                "error": [
+                "error": {
                     "code": "Unauthorized",
                     "message": "invalid token"
-                ]
+                }
             }
 
 ### Update Passenger Status [PUT]
@@ -224,13 +268,44 @@ https://github.com/georgesmith46/bcbp
     + Body
     
             { 
-                "error": [
+                "error": {
                     "code": "Unauthorized",
                     "message": "invalid token"
-                ]
+                }
             }
 
 ## Personal Information [/information]
+
+### Get Personal Information [GET]
+
+`administrator` | `staff` | `security`| `passenger` 
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    
++ Response 200 (application/json)
+
+    + Body
+    
+            { 
+                "value": {}
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (Error)
+
+    + Body
+    
+            { 
+                "error": {
+                    "code": "Unauthorized",
+                    "message": "invalid token"
+                }
+            }
 
 ### Update Personal Information [PUT]
 
@@ -257,10 +332,10 @@ https://github.com/georgesmith46/bcbp
     + Body
     
             { 
-                "error": [
+                "error": {
                     "code": "Unauthorized",
                     "message": "invalid token"
-                ]
+                }
             }
 
 ## Airports [/airports]
@@ -298,10 +373,10 @@ Get the list of available IATA airpode codes.
     + Body
     
             { 
-                "error": [
+                "error": {
                     "code": "Unauthorized",
                     "message": "invalid token"
-                ]
+                }
             }
 
 ## Flight [/flight]
@@ -326,7 +401,25 @@ Get the list of flights of a specific passenger.
     + Body
     
             { 
-                "value": []
+                "value": [
+                    {
+                        "airline": "中国东方航空",
+                        "flight_number": "MU291",
+                        "aircraft": "Airbus A320",
+                        "date_of_flight": "2019-12-19",
+                        "departure_time": "2019-12-19T17:15:00Z".
+                        "arrival_time": "2019-12-19T20:40:00Z"
+                        "origin_airport": {
+                            "position": "上海",
+                            "position_code": "SHA"
+                        },
+                        "destination_airport": {
+                            "position": "名古屋",
+                            "position_code": "NGO"
+                        },
+                        "status": "scheduled"
+                    }
+                ]
             }
 
 + Response 401 (application/json)
@@ -336,13 +429,13 @@ Get the list of flights of a specific passenger.
     + Body
     
             { 
-                "error": [
+                "error": {
                     "code": "Unauthorized",
                     "message": "invalid token"
-                ]
+                }
             }
 
-### Get Flight Detail [GET /flight/{?flight_id}]
+### Get Flight Detail [GET /flights/{?flight_id}]
 
 `passenger`
 
@@ -361,12 +454,39 @@ Get the detail of a specific flight according to the ID of flight.
 + Response 200 (application/json)
 
     + Attributes (object)
-        + value (Flight)
+        + value (Flight Detail)
 
     + Body
-    
+
             { 
                 "value": {
+                    "flight": {
+                        "airline": "中国东方航空",
+                        "flight_number": "MU291",
+                        "aircraft": "Airbus A320",
+                        "date_of_flight": "2019-12-19",
+                        "departure_time": "2019-12-19T17:15:00Z".
+                        "arrival_time": "2019-12-19T20:40:00Z"
+                        "origin_airport": {
+                            "name": "上海浦东国际机场",
+                            "IATA": "PVG",
+                            "latitude": "31.143333",
+                            "longitude": "121.805278"
+                        },
+                        "destination_airport": {
+                            "name": "中部国际机场",
+                            "IATA": "NGO",
+                            "latitude": "34.858333",
+                            "longitude": "136.805278"
+                        },
+                        "boarding_time": "2019-12-19T16:30:00Z",
+                        "boarding_gate": "2",
+                        "status": "scheduled"
+                    },
+                    "spec": {
+                        "compartment_code": "F",
+                        "seat_number": "1A",
+                    }
                 }
             }
 
@@ -377,14 +497,13 @@ Get the detail of a specific flight according to the ID of flight.
     + Body
     
             { 
-                "error": [
+                "error": {
                     "code": "Unauthorized",
                     "message": "invalid token"
-                ]
+                }
             }
-
-            
-### Create Flight [POST]
+   
+### Create Flight [POST /flights/{?flight_id}]
 
 `administrator`
 
@@ -418,10 +537,10 @@ Get the detail of a specific flight according to the ID of flight.
     + Body
     
             { 
-                "error": [
+                "error": {
                     "code": "Unauthorized",
                     "message": "invalid token"
-                ]
+                }
             }
 
 ### Update Flight [PUT]
@@ -449,11 +568,13 @@ Get the detail of a specific flight according to the ID of flight.
     + Body
     
             { 
-                "error": [
+                "error": {
                     "code": "Unauthorized",
                     "message": "invalid token"
-                ]
+                }
             }
+
+# Group WebSocket
 
 # Data Structures
 
@@ -484,8 +605,41 @@ Get the detail of a specific flight according to the ID of flight.
 + destination_airport (Airport)
 + boarding_time: `2019-12-19T16:30:00Z` (string) - Time of Boarding
 + boarding_gate: `2` (string)
-+ status (enum[number])
++ status: `scheduled` (enum[string]) - Status of Flight
 
     + Members
     
-        + `0`
+        + `scheduled` - 已排定
+        + `delayed` - 已延误
+        + `boarding` - 登机中
+        + `departed` - 已出发
+        + `arrived` - 已到达
+        + `cancelled` - 已取消
+        + `noTakeoffInfo` - 无
+
+## Flight Detail (object)
+
++ flight (Flight)
++ spec (object)
+    + compartment_code: `F` (enum[string]) - Code of Compartment
+    
+        + Members
+            
+            + `F` - First Class
+            + `C` - Business Class
+            + `Y` - Economy Class
+
+    + seat_number: `1A` (string) - Number of Seat
+
+## Passenger Status (object)
+
++ passenger_status: `0` (enum[number])
+
+    + Members
+
+        + `0` - Ticket issuance/passenger not checked in
+        + `1` - Ticket issuance/passenger checked in
+        + `2` - Bag checked/passenger not checked in
+        + `3` - Bag checked/passenger checked in
+        + `7` - Standby
+        + `8` - Boarding data revalidation done
