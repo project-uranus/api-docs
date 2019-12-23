@@ -72,9 +72,6 @@ https://shaun.net/notes/whats-contained-in-a-boarding-pass-barcode/
 | passenger_status | `Char` | 1 | 0 | 0 | |
 | field\_size\_of\_variable\_size\_field | `String` | 2 | 00 | 00 | `DEFAULT` Hexiadecimal |
 
-#### Passenger Status
-
-
 ### Counter
 
 | Name | Type | Example |
@@ -150,7 +147,7 @@ https://shaun.net/notes/whats-contained-in-a-boarding-pass-barcode/
 
 ## Check-in [/checkin]
 
-### Check-in [GET]
+### Check-in [POST]
 
 `passenger`
 
@@ -200,11 +197,15 @@ https://shaun.net/notes/whats-contained-in-a-boarding-pass-barcode/
                 }
             }
 
-## Boarding Pass [/boardingPass]
+## Boarding Pass [/boardingPass{?flight_id}]
 
 ### Get Boarding Pass Token [GET]
 
 `passenger`
+
++ Parameters
+
+    + flight_id: `ABC123` (optional, string) - Flight ID
 
 + Request
 
@@ -221,7 +222,7 @@ https://shaun.net/notes/whats-contained-in-a-boarding-pass-barcode/
     + Body
     
             { 
-                "token": "M1DESMARAIS/LUC       EABC123 YULFRAAC 0834 226F001A0025 100"
+                "token": "M1EWING/SHAUN MR       1A11A1 BNESYDQF 551  107Y26J 37    00"
             }
 
 + Response 401 (application/json)
@@ -383,7 +384,7 @@ Get the list of available IATA airpode codes.
 
 ### Get Flight list [GET /flights]
 
-`passenger`
+`administrator` | `staff` | `passenger`
 
 Get the list of flights of a specific passenger.
 
@@ -403,12 +404,13 @@ Get the list of flights of a specific passenger.
             { 
                 "value": [
                     {
+                        "id": 1576738590792,
                         "airline": "中国东方航空",
                         "flight_number": "MU291",
                         "aircraft": "Airbus A320",
                         "date_of_flight": "2019-12-19",
-                        "departure_time": "2019-12-19T17:15:00Z".
-                        "arrival_time": "2019-12-19T20:40:00Z"
+                        "departure_time": "2019-12-19T17:15:00Z",
+                        "arrival_time": "2019-12-19T20:40:00Z",
                         "origin_airport": {
                             "position": "上海",
                             "position_code": "SHA"
@@ -435,7 +437,7 @@ Get the list of flights of a specific passenger.
                 }
             }
 
-### Get Flight Detail [GET /flights/{?flight_id}]
+### Get Flight Detail [GET /flights/{flight_id}]
 
 `passenger`
 
@@ -465,17 +467,19 @@ Get the detail of a specific flight according to the ID of flight.
                         "flight_number": "MU291",
                         "aircraft": "Airbus A320",
                         "date_of_flight": "2019-12-19",
-                        "departure_time": "2019-12-19T17:15:00Z".
-                        "arrival_time": "2019-12-19T20:40:00Z"
+                        "departure_time": "2019-12-19T17:15:00Z",
+                        "arrival_time": "2019-12-19T20:40:00Z",
                         "origin_airport": {
                             "name": "上海浦东国际机场",
                             "IATA": "PVG",
+                            "position": "上海",
                             "latitude": "31.143333",
                             "longitude": "121.805278"
                         },
                         "destination_airport": {
                             "name": "中部国际机场",
                             "IATA": "NGO",
+                            "position": "名古屋",
                             "latitude": "34.858333",
                             "longitude": "136.805278"
                         },
@@ -486,6 +490,13 @@ Get the detail of a specific flight according to the ID of flight.
                     "spec": {
                         "compartment_code": "F",
                         "seat_number": "1A",
+                        "luggages": [
+                            {
+                                "luggage_id": 1576998137,  // long
+                                "weight": 20.12,
+                                "status": "checked"
+                            }
+                        ]
                     }
                 }
             }
@@ -556,7 +567,17 @@ Get the detail of a specific flight according to the ID of flight.
     + Body
 
             {
-                "passenger_status": 'A'
+                "airline": "", (optional, string)
+                "flight_number": "", (optional, string)
+                "aircraft": "", (optional, string)
+                "date_of_flight": "", (optional, string)
+                "departure_time": "", (optional, string)
+                "arrival_time": "", (optional, string)
+                "origin_airport": "", (optional, string)
+                "destination_airport": "", (optional, string)
+                "boarding_time": "", (optional, string)
+                "boarding_gate": "", (optional, string)
+                "status": "", (optional, string)
             }
 
 + Response 200 (application/json)
@@ -574,7 +595,189 @@ Get the detail of a specific flight according to the ID of flight.
                 }
             }
 
+## Luggage [/luggages]
+
+### Add Luggages [POST]
+
+`staff`
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    
+    + Body
+
+            {
+                "weight": 20.10,
+                "passenger_id": ""
+            }
+
++ Response 200 (application/json)
+
+### Update Luggage [PUT]
+
+`security`
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    
+    + Body
+
+            {
+                "passed": false,
+                "message": "drug inside",
+                "id": 1577011285987
+            }
+
++ Response 200 (application/json)
+
+## Passenger [/passengers]
+
+### Import passenger information [POST]
+
+`administrator`
+
++ Request (multipart/form-data)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    
+    + Body
+
+            {
+                "file": FileObject, // csv file
+            }
+
++ Response 200 (application/json)
+
+### Get passenger list [GET /passengers{?flight}]
+
+`administrator` | `staff`
+
++ Request 
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+    
+
++ Parameters
+
+    + flight: `ABC123` (optional, string) - Flight ID
+    
+
++ Response 200 (application/json)
+
+
+    + Attributes (object)
+
+        + value (array[object])
+
+    + Body
+    
+            { 
+                "value": [{
+                    "id": 1576897149915,  // passenger id
+                    "seat": "001A",
+                    "name": "ZhouXin",
+                    "email": "cgcg96@sjtu.edu.cn",
+                    "id_number": "119037910039",
+                    "first_name": "Xin",
+                    "last_name": "Zhou"
+                }]
+            }
+
+
+
 # Group WebSocket
+
+## Notification [/notificaiton]
+
+### Notification WebSocket [GET]
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+
++ Response 200 (application/json)
+
+    + Body
+    
+            { 
+                "type": "notification",
+                "message": {
+                    "title": "",
+                    "body": ""
+                }
+            }
+
+## Counter [/counter]
+
+### Counter WebSocket [GET]
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+
++ Response 200 (application/json)
+
+    + Body
+
+            { 
+                "type": "passenger",
+                "message": [{
+                    "information": {
+                        "id": 1576930163001, // passenger id
+                        "email": "john.doe@example.com",
+                        "name": "John Doe",
+                        "first_name": "John",
+                        "last_name": "Doe",
+                        "id_number": "00000000"
+                    },
+                    "spec": {
+                        "compartment_code": "F",
+                        "seat_number": "31A"
+                    }
+                }]
+            }
+
+## Luggage [/security]
+
+### Luggage WebSocket [GET]
+
++ Request (application/json)
+
+    + Headers
+    
+            Authorization: Bearer QWxhZGRpbjpvcGVuIHNlc2FtZQ==
+
++ Response 200 (application/json)
+
+    + Body
+    
+            { 
+                "type": "luggage",
+                "message": {
+                    "information": {
+                        "email": "john.doe@example.com",
+                        "name": "John Doe",
+                        "first_name": "John",
+                        "last_name": "Doe",
+                        "id_number": "00000000"
+                    },
+                    "luggages": 1576930163000
+                }
+            }
 
 # Data Structures
 
@@ -631,6 +834,8 @@ Get the detail of a specific flight according to the ID of flight.
 
     + seat_number: `1A` (string) - Number of Seat
 
+## Passenger (object)
+
 ## Passenger Status (object)
 
 + passenger_status: `0` (enum[number])
@@ -643,3 +848,13 @@ Get the detail of a specific flight according to the ID of flight.
         + `3` - Bag checked/passenger checked in
         + `7` - Standby
         + `8` - Boarding data revalidation done
+
+## Luggage Status (object)
+
++ luggage_status: `notChecked` (enum[string])
+
+    + Members
+
+        + `notChecked` - Bag not checked
+        + `checked` - Bag passed check
+        + `checkFailed` - Bag failed check
